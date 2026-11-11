@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MANVINDER CYBERTRACE</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#060b14;color:#eafaff;font-family:Arial;padding:20px}main{max-width:1100px;margin:auto}header{text-align:center;padding:25px;border-bottom:1px solid #00eaff}h1,h2{color:#00eaff}h1{letter-spacing:3px;text-shadow:0 0 15px #00eaff}.sub{color:#8caab9}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:15px;margin:25px 0}.card,section{background:#101b29;border:1px solid #087d91;border-radius:12px;padding:20px}.card{box-shadow:0 0 12px #003b50}.card small{color:#9bb8c5}.num{font-size:32px;color:#00eaff;margin-top:12px;font-weight:bold}button{background:#00dff0;color:#001018;border:0;padding:12px 17px;border-radius:7px;font-weight:bold;cursor:pointer;margin:7px 4px}button:hover{box-shadow:0 0 14px #00eaff}input{margin:15px 0;max-width:100%;color:white}section{margin:18px 0;overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:520px}th,td{text-align:left;padding:12px;border-bottom:1px solid #29404b}th{color:#00eaff}.bad{color:#ff718a}.good{color:#4dffb0}footer{text-align:center;color:#7893a5;padding:25px}
+</style>
+</head>
+<body><main>
+<header><h1>MANVINDER CYBERTRACE</h1><p class="sub">SMART CYBERSECURITY LOG ANALYZER</p></header>
+<section><h2>Security Control Center</h2><p>Upload login activity CSV (Time, IP, Username, Status)</p><input type="file" id="file" accept=".csv"><br><button onclick="analyze()">ANALYZE LOGS</button><button onclick="downloadReport()">DOWNLOAD REPORT</button><button onclick="demo()">LOAD DEMO DATA</button></section>
+<div class="cards">
+<div class="card"><small>TOTAL LOGINS</small><div class="num" id="total">7</div></div>
+<div class="card"><small>SUCCESSFUL</small><div class="num" id="success">3</div></div>
+<div class="card"><small>FAILED</small><div class="num" id="failed">4</div></div>
+<div class="card"><small>SUSPICIOUS IPs</small><div class="num" id="threat">1</div></div>
+</div>
+<section><h2>Login Activity</h2><table><thead><tr><th>Time</th><th>IP</th><th>Username</th><th>Status</th></tr></thead><tbody id="logs"></tbody></table></section>
+<section><h2>Threat Detection Center</h2><div id="alerts"></div></section>
+<footer>MANVINDER CYBERTRACE | B.TECH IT PROJECT</footer>
+</main>
+<script>
+let rows=[],threats={};
+const sample=[["09:00","192.168.1.10","admin","SUCCESS"],["09:05","192.168.1.12","user1","SUCCESS"],["09:10","192.168.1.50","admin","FAILED"],["09:11","192.168.1.50","admin","FAILED"],["09:12","192.168.1.50","admin","FAILED"],["09:13","192.168.1.50","admin","FAILED"],["09:15","192.168.1.15","user2","SUCCESS"]];
+function safe(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function render(){
+let ok=rows.filter(r=>r[3].toUpperCase()==="SUCCESS").length,bad=rows.filter(r=>r[3].toUpperCase()==="FAILED").length,counts={};
+rows.filter(r=>r[3].toUpperCase()==="FAILED").forEach(r=>counts[r[1]]=(counts[r[1]]||0)+1);
+threats=Object.fromEntries(Object.entries(counts).filter(x=>x[1]>=3));
+document.getElementById("total").textContent=rows.length;
+document.getElementById("success").textContent=ok;
+document.getElementById("failed").textContent=bad;
+document.getElementById("threat").textContent=Object.keys(threats).length;
+document.getElementById("logs").innerHTML=rows.map(r=>"<tr>"+r.map(x=>"<td>"+safe(x)+"</td>").join("")+"</tr>").join("");
+document.getElementById("alerts").innerHTML=Object.keys(threats).length?Object.entries(threats).map(x=>'<p class="bad">⚠ '+safe(x[0])+" — "+x[1]+" failed attempts</p>").join(""):'<p class="good">No suspicious IP detected.</p>';
+}
+function demo(){rows=sample.map(r=>[...r]);render();}
+function parseCSV(text){
+let lines=text.trim().split(/\r?\n/),head=lines.shift().split(",").map(x=>x.trim().replace(/^"|"$/g,"").toLowerCase()),ids=["time","ip","username","status"].map(x=>head.indexOf(x));
+if(ids.some(x=>x<0))throw Error("CSV needs Time, IP, Username, Status columns.");
+return lines.filter(Boolean).map(line=>{let c=line.match(/("([^"]|"")*"|[^,]*)(,|$)/g)||[];c=c.map(x=>x.replace(/,$/,"").replace(/^"|"$/g,"").replace(/""/g,'"'));return ids.map(i=>c[i]||"");});
+}
+function analyze(){
+let f=document.getElementById("file").files[0];if(!f)return alert("Choose a CSV file first.");
+let reader=new FileReader();reader.onload=()=>{try{rows=parseCSV(reader.result);render();}catch(e){alert(e.message);}};reader.readAsText(f);
+}
+function downloadReport(){
+let text="MANVINDER CYBERTRACE SECURITY REPORT\nGenerated: "+new Date().toLocaleString()+"\nTotal: "+rows.length+"\nSuccessful: "+document.getElementById("success").textContent+"\nFailed: "+document.getElementById("failed").textContent+"\nSuspicious IPs:\n"+Object.entries(threats).map(x=>x[0]+" - "+x[1]+" failures").join("\n");
+let a=document.createElement("a"),u=URL.createObjectURL(new Blob([text],{type:"text/plain"}));a.href=u;a.download="MANVINDER_REPORT.txt";a.click();URL.revokeObjectURL(u);
+}
+demo();
+</script></body></html>
